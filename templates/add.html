@@ -1,0 +1,39 @@
+
+{%extends 'base.html' %}
+{% load static%}
+{%block content%}
+
+<script src="{% static 'script.js' %}"></script>
+<div class="col-lg-4 mt-4">
+        <input type="text" name="positivePercent" id="positivePercent" value="{{ positivePercent }}">
+            <input type="text" name="negativePercent" id="negativePercent" value="{{ negativePercent}}">
+        <!-- Display Pie -->
+        <canvas id="user_attendance"></canvas>
+        <p class="text-center mt-3">Total attendance (%) for the chosen period.</p>
+      </div>
+
+
+	<!-- jinja2 Technique-->
+	{% if d %}
+	{% for i in d %}
+	<tr>
+		<td>Week {{i.index}}</td><br><br>
+		<!--
+		<td>{{i.Present_First_Shift}}</td>
+		<td>{{i.Present_Second_Shift}}</td>
+		<td>{{i.Absent_Both_Shift}}</td>
+		<td>{{i.Absent_First_Shift}}</td>
+		<td>{{i.Absent_Second_Shift}}</td>-->
+	</tr>
+	{% endfor %}
+	{% endif %}
+	</tbody>
+</table>
+</div>
+
+</body>
+</html>
+
+
+
+{%endblock%}
