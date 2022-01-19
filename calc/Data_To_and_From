@@ -1,0 +1,49 @@
+import firebase_admin
+from firebase_admin import firestore
+from firebase_admin import credentials
+import pandas as pd
+import numpy as np
+import datetime
+import calendar
+from pyasn1.compat.octets import null
+
+cred = credentials.Certificate("C:\\Users\\adity\\OneDrive\\Documents\\FireStore\\mukhamcore_serviceaccountkey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+def per_to_from(toDate,fromDate,idf):
+    doc=db.collection('AttendanceDetail').document(idf).get()
+    d=doc.to_dict()['data']
+    dx=pd.DataFrame(d)
+    print(dx.to_string())
+    if type(toDate)!=str:
+        td=datetime.date(toDate.year,toDate.month,toDate.day)
+        fd=datetime.date(fromDate.year,fromDate.month,fromDate.day)
+    else:
+        td=datetime.datetime.strptime(toDate,"%Y-%m-%d")
+        fd=datetime.datetime.strptime(fromDate,"%Y-%m-%d")
+    td=datetime.datetime.strftime(td,"%Y-%m-%d")
+    fd=datetime.datetime.strftime(fd,"%Y-%m-%d")
+    fi=0
+    li=1
+    for i in range(0,len(d['Date'])):
+        if d['Date'][i]==td:
+            li=i
+
+        elif d['Date'][i]==fd:
+            fi=i
+
+    p=0
+    to=0
+    for i in range(fi,li+1):
+        if d['First Shift'][i]==True:
+            p=p+1
+        if d['Second Shift'][i]==True:
+            p=p+1
+        to=to+2
+    return round((p/to)*100)
+
+docs=db.collection('AttendanceDetail').get()
+j=0
+for i in docs:
+    print(per_to_from("2022-01-03","2021-12-30",i.id))
+
