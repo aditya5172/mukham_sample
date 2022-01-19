@@ -1,0 +1,240 @@
+import firebase_admin
+from firebase_admin import firestore
+from firebase_admin import credentials
+import pandas as pd
+import numpy as np
+import datetime
+import calendar
+from pyasn1.compat.octets import null
+
+cred = credentials.Certificate("C:\\Users\\adity\\OneDrive\\Documents\\FireStore\\mukhamcore_serviceaccountkey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+
+docs2 = db.collection("Users").stream()
+def per(df4):
+    p=0
+    to=0
+    for i in range(0,len(df4)):
+        if df4['First Shift'][i]!=False:
+            p=p+1
+
+            #print(i)
+        if df4['Second Shift'][i]!=False:
+            p=p+1
+
+            #print(i)
+        to=to+2
+    return p,to
+def numberOfDays( y, m):
+    leap = 0
+    if y% 400 == 0:
+     leap = 1
+    elif y % 100 == 0:
+     leap = 0
+    elif y% 4 == 0:
+     leap = 1
+    if m==2:
+     return 28 + leap
+    list = [1,3,5,7,8,10,12]
+    if m in list:
+     return 31
+    return 30
+
+def ind(a):
+    data={
+        'Name':[],
+        'Date':[],
+        'First Shift':[],
+        'Time for First Shift':[],
+        'Second Shift':[],
+        'Time for Second Shift':[]
+    }
+    mon = np.arange(1, 13)
+    mn = []
+    for i in mon:
+        f = calendar.month_name[i]
+        mn.append(f)
+    yr = ["2021", "2022"]
+    for ij in yr:
+        for k in mn:
+            doc = db.collection("AttendanceData").document(a).collection("Years").document(ij).collection("Months").document(k).collection("Days").get()
+            q=0
+            for m in doc:
+                if m.id!=null:
+                    q=q+1
+
+            if q>0:
+
+                for m in doc:
+                    d=m.id
+                    dd=datetime.datetime.strptime(d,"%d-%m-%Y")
+
+                    g=db.collection('Users').document(a).get()
+                    data['Name'].append(g.to_dict()['fullName'])
+
+                    e=m.to_dict()
+                    data['Date'].append(dd)
+                    for i in range(0,2):
+                        f=e[d][i]
+                        if type(f)==bool:
+                            if i==0:
+                                data['First Shift'].append(False)
+                                data['Time for First Shift'].append(np.nan)
+                            elif i==1:
+                                data['Second Shift'].append(False)
+                                data['Time for Second Shift'].append(np.nan)
+                        else:
+                            if i==0:
+                                data['First Shift'].append(True)
+                                data['Time for First Shift'].append(f.time().strftime("%H:%M:%S"))
+                            elif i==1:
+                                data['Second Shift'].append(True)
+                                data['Time for Second Shift'].append(f.time().strftime("%H:%M:%S"))
+    df=pd.DataFrame(data)
+    return df
+
+def us(idf):
+    j=0
+
+    inp=idf
+    for iii in docs2:
+        j = j + 1
+        if iii.id == inp:
+            doc = db.collection("AttendanceData").document(iii.id).id
+            df2=ind(doc)
+            break
+
+    da={
+        'Date':[],
+        'First Shift':[],
+        'Time for First Shift':[],
+        'Second Shift':[],
+        'Time for Second Shift':[]
+    }
+
+
+    m=0
+    jj=0
+
+    for i in range(0,len(df2)-1):
+        jj=1
+        if df2['Date'][i+1].month!=df2['Date'][i].month:
+            ld=numberOfDays(df2['Date'][i].year,df2['Date'][i].month)
+            da['Date'].append(df2['Date'][i])
+            da['First Shift'].append(df2['First Shift'][i])
+            da['Time for First Shift'].append(df2['Time for First Shift'][i])
+            da['Second Shift'].append(df2['Second Shift'][i])
+            da['Time for Second Shift'].append(df2['Time for Second Shift'][i])
+            #print(df2['Date'][i].day+1,ld+1)
+            for j in range(df2['Date'][i].day+1,ld+1):
+                dd=datetime.date(df2['Date'][i].year,df2['Date'][i].month,j)
+
+                da['Date'].append(dd)
+                da['First Shift'].append(False)
+                da['Time for First Shift'].append(np.nan)
+                da['Second Shift'].append(False)
+                da['Time for Second Shift'].append(np.nan)
+            for j in range(1,df2['Date'][i+1].day):
+                dd=datetime.date(df2['Date'][i+1].year,df2['Date'][i+1].month,j)
+
+                da['Date'].append(dd)
+                da['First Shift'].append(False)
+                da['Time for First Shift'].append(np.nan)
+                da['Second Shift'].append(False)
+                da['Time for Second Shift'].append(np.nan)
+
+        else:
+            #print(df2['Date'][i+1].day-df2['Date'][i].day)
+
+            if (df2['Date'][i+1].day-df2['Date'][i].day)>1:
+                da2=df2['Date'][i+1].day
+                da1=df2['Date'][i].day
+                da['Date'].append(df2['Date'][i])
+                da['First Shift'].append(df2['First Shift'][i])
+                da['Time for First Shift'].append(df2['Time for First Shift'][i])
+                da['Second Shift'].append(df2['Second Shift'][i])
+                da['Time for Second Shift'].append(df2['Time for Second Shift'][i])
+                #print(m,"yes")
+                m=m+1
+                for j in range(da1+1,da2):
+                    dd=datetime.date(df2['Date'][i].year,df2['Date'][i].month,j)
+                    #print(dd)
+                    da['Date'].append(dd)
+                    da['First Shift'].append(False)
+                    da['Time for First Shift'].append(np.nan)
+                    da['Second Shift'].append(False)
+                    da['Time for Second Shift'].append(np.nan)
+            else:
+                da['Date'].append(df2['Date'][i])
+                da['First Shift'].append(df2['First Shift'][i])
+                da['Time for First Shift'].append(df2['Time for First Shift'][i])
+                da['Second Shift'].append(df2['Second Shift'][i])
+                da['Time for Second Shift'].append(df2['Time for Second Shift'][i])
+    df3=pd.DataFrame(da)
+
+    if jj==1:
+
+        da['Date'].append(df2['Date'][i+1])
+        da['First Shift'].append(df2['First Shift'][i+1])
+        da['Time for First Shift'].append(df2['Time for First Shift'][i+1])
+        da['Second Shift'].append(df2['Second Shift'][i+1])
+        da['Time for Second Shift'].append(df2['Time for Second Shift'][i+1])
+        ax=da.copy()
+        ax.pop('Time for Second Shift')
+        ax.pop('Time for First Shift')
+        df3=pd.DataFrame(da)
+
+        #print(df3.to_string())
+
+
+        p=0
+        ab=0
+        p,to=per(df3)
+        #print(p,ab)
+        ddf={'Present':p,'Absent':(to-p),'Total':to}
+
+        print(ddf)
+
+        for i in range(len(ax['Date'])):
+            abx=ax['Date'][i]
+            ax['Date'][i]=datetime.datetime.strftime(abx,"%Y-%m-%d")
+            #print(i)
+
+        ax['First Shift']=list(map(bool,ax['First Shift']))
+        ax['Second Shift']=list(map(bool,ax['Second Shift']))
+        docs3=db.collection('AttendanceDetail').stream()
+        for i in docs3:
+            if i.id!=idf:
+                uid=db.collection("AttendanceDetail").document(idf)
+                ddb=db.collection("Users").document(idf).get()
+                uid.set({'name':ddb.to_dict()['fullName'],'data':ax},merge=True)
+            else:
+                uid=db.collection("AttendanceDetail").document(idf)
+                uid.update({'name':ddb.to_dict()['fullName'],'data':ax})
+        school=['SCOPE','SENSE','SMEC','SAS','VSB','VSL','VISH','OTHERS']
+        docs3=db.collection('AttendanceFilter').stream()
+        for i in docs3:
+            if i.id!=idf:
+                for ik in school:
+                    if ik==ddb.to_dict()['school']:
+                        afid=db.collection("AttendanceFilter").document('School').collection(ik).document(idf)
+                        afid.set({'name':ddb.to_dict()['fullName'],'data':ddf},merge=True)
+
+            else:
+                for ik in school:
+                    if ik==ddb.to_dict()['school']:
+                        afid=db.collection("AttendanceFilter").document('School').collection(ik).document(idf)
+                        afid.update({'name':ddb.to_dict()['fullName'],'data':ddf})
+
+        
+#print(doc.to_dict())
+docs=db.collection('Users').get()
+j=0
+for i in docs:
+    j=j+1
+    #if j==2:
+    us(i.id)
+
+
